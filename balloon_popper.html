@@ -110,8 +110,8 @@
                     return img;
                 });
 
-                // Загрузка звука лопания
-                this.popSound = new Audio('https://www.myinstants.com/media/sounds/balloon-pop.mp3');
+                // Загрузка локального звука лопания
+                this.popSound = new Audio('https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3');
                 this.popSound.preload = 'auto';
             }
 
@@ -140,9 +140,8 @@
                     }
                 });
 
-                // Воспроизводим звук только если попали в шарик
                 if (poppedAny) {
-                    this.popSound.currentTime = 0; // Сбрасываем на начало для перекрытия воспроизведения
+                    this.popSound.currentTime = 0;
                     this.popSound.play().catch(error => console.error('Ошибка воспроизведения звука:', error));
                 }
             }
@@ -163,7 +162,7 @@
                     dy: -(1 + Math.random() * 2),
                     size: size,
                     image: this.balloonImages[index],
-                    poppedImage: this.poppedImages[index], // Соответствующий лопнувший шарик
+                    poppedImage: this.poppedImages[index],
                     popped: false,
                     popTime: 0
                 };
