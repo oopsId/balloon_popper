@@ -140,8 +140,8 @@
         }
         #modeSelector button {
             display: block;
-            width: 90%;
-            max-width: 200px;
+            width: 100%; /* Увеличена ширина до 100% */
+            max-width: 250px; /* Увеличен максимальный размер до 250px */
             margin: 10px auto;
             padding: 10px;
             background: #FF5722;
@@ -151,6 +151,9 @@
             font-size: 20px;
             cursor: pointer;
             transition: background 0.3s;
+            white-space: nowrap; /* Предотвращает перенос текста */
+            overflow: hidden; /* Скрывает переполнение */
+            text-overflow: ellipsis; /* Добавляет многоточие, если текст не помещается */
         }
         #modeSelector button:hover {
             background: #E64A19;
@@ -196,7 +199,7 @@
             constructor() {
                 this.initTelegram();
                 this.initCanvas();
-                this.selectGameMode();
+                this.setupModeSelection(); // Заменил selectGameMode на setupModeSelection
             }
 
             initTelegram() {
@@ -237,7 +240,7 @@
                 this.initClouds();
             }
 
-            selectGameMode() {
+            setupModeSelection() {
                 const startMode = (mode) => {
                     this.modeSelector.classList.add('hidden');
                     setTimeout(() => {
@@ -247,31 +250,27 @@
                             setTimeout(() => {
                                 this.luckMessage.style.opacity = '0';
                                 this.setGameMode(mode);
-                            }, 500);
+                            }, 1000); // Увеличено до 1 секунды
                         } else {
                             this.setGameMode(mode);
                         }
                     }, 500);
                 };
 
-                // Очистка старых слушателей, если они есть
-                const buttons = {
-                    meditative: document.getElementById('meditativeMode'),
-                    difficult: document.getElementById('difficultMode'),
-                    hardcore: document.getElementById('hardcoreMode')
-                };
+                // Привязка событий напрямую без клонирования
+                const meditativeBtn = document.getElementById('meditativeMode');
+                const difficultBtn = document.getElementById('difficultMode');
+                const hardcoreBtn = document.getElementById('hardcoreMode');
 
-                // Удаляем старые обработчики, чтобы избежать дублирования
-                for (const [key, btn] of Object.entries(buttons)) {
-                    const newBtn = btn.cloneNode(true);
-                    btn.parentNode.replaceChild(newBtn, btn);
-                    buttons[key] = newBtn;
-                }
+                // Удаляем старые обработчики перед добавлением новых
+                meditativeBtn.replaceWith(meditativeBtn.cloneNode(true));
+                difficultBtn.replaceWith(difficultBtn.cloneNode(true));
+                hardcoreBtn.replaceWith(hardcoreBtn.cloneNode(true));
 
-                // Привязываем новые обработчики
-                buttons.meditative.addEventListener('click', () => startMode('meditative'));
-                buttons.difficult.addEventListener('click', () => startMode('difficult'));
-                buttons.hardcore.addEventListener('click', () => startMode('hardcore'));
+                // Получаем новые элементы после замены
+                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'));
+                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'));
+                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'));
             }
 
             setGameMode(mode) {
@@ -287,10 +286,10 @@
                     case 'meditative':
                         this.gameMode = 'meditative';
                         this.maxTime = null;
-                        this.maxMissed = 150; // Изменено на 150
-                        this.balloonSpeedMultiplier = 0.5; // Медленные шарики
+                        this.maxMissed = 150;
+                        this.balloonSpeedMultiplier = 0.5;
                         this.balloonInterval = 200;
-                        this.showEncouragements = true; // Сообщения каждые 40 очков
+                        this.showEncouragements = true;
                         break;
                     case 'difficult':
                         this.gameMode = 'difficult';
@@ -427,7 +426,7 @@
                 }
 
                 if (this.showEncouragements) {
-                    const milestoneInterval = this.gameMode === 'meditative' ? 40 : 50; // 40 для медитативного
+                    const milestoneInterval = this.gameMode === 'meditative' ? 40 : 50;
                     if (this.score > 0 && this.score % milestoneInterval === 0 && this.score !== this.lastMilestone) {
                         this.showMilestone();
                         this.lastMilestone = this.score;
@@ -547,7 +546,7 @@
                 window.Telegram.WebApp.MainButton.hide();
                 this.modeSelector.style.display = 'block';
                 this.modeSelector.classList.remove('hidden');
-                this.selectGameMode();
+                this.setupModeSelection(); // Обновленный вызов
             }
 
             handleTouch(e) {
