@@ -140,8 +140,8 @@
         }
         #modeSelector button {
             display: block;
-            width: 100%; /* Увеличена ширина до 100% */
-            max-width: 250px; /* Увеличен максимальный размер до 250px */
+            width: 100%;
+            max-width: 250px;
             margin: 10px auto;
             padding: 10px;
             background: #FF5722;
@@ -151,9 +151,9 @@
             font-size: 20px;
             cursor: pointer;
             transition: background 0.3s;
-            white-space: nowrap; /* Предотвращает перенос текста */
-            overflow: hidden; /* Скрывает переполнение */
-            text-overflow: ellipsis; /* Добавляет многоточие, если текст не помещается */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #modeSelector button:hover {
             background: #E64A19;
@@ -199,7 +199,7 @@
             constructor() {
                 this.initTelegram();
                 this.initCanvas();
-                this.setupModeSelection(); // Заменил selectGameMode на setupModeSelection
+                this.setupModeSelection(); // Инициализация выбора режима один раз
             }
 
             initTelegram() {
@@ -250,27 +250,17 @@
                             setTimeout(() => {
                                 this.luckMessage.style.opacity = '0';
                                 this.setGameMode(mode);
-                            }, 1000); // Увеличено до 1 секунды
+                            }, 1000); // 1 секунда для "Желаю удачи!"
                         } else {
                             this.setGameMode(mode);
                         }
                     }, 500);
                 };
 
-                // Привязка событий напрямую без клонирования
-                const meditativeBtn = document.getElementById('meditativeMode');
-                const difficultBtn = document.getElementById('difficultMode');
-                const hardcoreBtn = document.getElementById('hardcoreMode');
-
-                // Удаляем старые обработчики перед добавлением новых
-                meditativeBtn.replaceWith(meditativeBtn.cloneNode(true));
-                difficultBtn.replaceWith(difficultBtn.cloneNode(true));
-                hardcoreBtn.replaceWith(hardcoreBtn.cloneNode(true));
-
-                // Получаем новые элементы после замены
-                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'));
-                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'));
-                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'));
+                // Привязка событий один раз при загрузке
+                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'), { once: false });
+                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'), { once: false });
+                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'), { once: false });
             }
 
             setGameMode(mode) {
@@ -453,6 +443,8 @@
                 window.Telegram.WebApp.MainButton.show();
                 setTimeout(() => {
                     this.milestoneElement.style.opacity = '0';
+                    this.modeSelector.style.display = 'block'; // Показываем выбор режима после конца игры
+                    this.modeSelector.classList.remove('hidden');
                 }, 5000);
             }
 
@@ -544,9 +536,7 @@
                     this.timerDisplay.style.display = 'none';
                 }
                 window.Telegram.WebApp.MainButton.hide();
-                this.modeSelector.style.display = 'block';
-                this.modeSelector.classList.remove('hidden');
-                this.setupModeSelection(); // Обновленный вызов
+                // Убрали повторный вызов setupModeSelection, так как события уже привязаны
             }
 
             handleTouch(e) {
