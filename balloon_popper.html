@@ -90,6 +90,11 @@
                     'https://oopsid.github.io/balloon_popper/assets/balloon_blue.png',
                     'https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png'
                 ];
+                this.poppedSources = [
+                    'https://oopsid.github.io/balloon_popper/assets/popped_red.png',
+                    'https://oopsid.github.io/balloon_popper/assets/popped_blue.png',
+                    'https://oopsid.github.io/balloon_popper/assets/popped_yellow.png'
+                ];
                 
                 this.balloonImages = this.balloonSources.map(src => {
                     const img = new Image();
@@ -98,9 +103,16 @@
                     return img;
                 });
                 
-                this.poppedImage = new Image();
-                this.poppedImage.src = 'https://oopsid.github.io/balloon_popper/assets/popped_balloon.png';
-                this.poppedImage.onerror = () => console.error('Ошибка загрузки popped_balloon.png');
+                this.poppedImages = this.poppedSources.map(src => {
+                    const img = new Image();
+                    img.src = src;
+                    img.onerror = () => console.error(`Ошибка загрузки изображения: ${src}`);
+                    return img;
+                });
+
+                // Загрузка звука лопания
+                this.popSound = new Audio('https://www.myinstants.com/media/sounds/balloon-pop.mp3');
+                this.popSound.preload = 'auto';
             }
 
             setupEventListeners() {
@@ -118,13 +130,21 @@
                 const touchX = touch.clientX;
                 const touchY = touch.clientY;
                 
+                let poppedAny = false;
                 this.balloons.forEach(balloon => {
                     if (!balloon.popped && this.isPointInBalloon(touchX, touchY, balloon)) {
                         balloon.popped = true;
                         balloon.popTime = Date.now();
                         this.score += 1;
+                        poppedAny = true;
                     }
                 });
+
+                // Воспроизводим звук только если попали в шарик
+                if (poppedAny) {
+                    this.popSound.currentTime = 0; // Сбрасываем на начало для перекрытия воспроизведения
+                    this.popSound.play().catch(error => console.error('Ошибка воспроизведения звука:', error));
+                }
             }
             
             isPointInBalloon(x, y, balloon) {
@@ -135,13 +155,15 @@
             }
 
             createBalloon() {
-                const size = 64 / this.dpr; // Масштабируем размер с учётом DPR
+                const size = 64 / this.dpr;
+                const index = Math.floor(Math.random() * this.balloonImages.length);
                 return {
                     x: Math.random() * (this.canvas.width / this.dpr - size),
                     y: this.canvas.height / this.dpr + size,
                     dy: -(1 + Math.random() * 2),
                     size: size,
-                    image: this.balloonImages[Math.floor(Math.random() * this.balloonImages.length)],
+                    image: this.balloonImages[index],
+                    poppedImage: this.poppedImages[index], // Соответствующий лопнувший шарик
                     popped: false,
                     popTime: 0
                 };
@@ -189,14 +211,14 @@
                 
                 this.balloons.forEach(balloon => {
                     if (balloon.popped) {
-                        this.ctx.drawImage(this.poppedImage, balloon.x, balloon.y, balloon.size, balloon.size);
+                        this.ctx.drawImage(balloon.poppedImage, balloon.x, balloon.y, balloon.size, balloon.size);
                     } else {
                         this.ctx.drawImage(balloon.image, balloon.x, balloon.y, balloon.size, balloon.size);
                     }
                 });
                 
                 this.ctx.fillStyle = '#000';
-                this.ctx.font = `${20 / this.dpr}px Arial`; // Масштабируем шрифт с DPR
+                this.ctx.font = `${20 / this.dpr}px Arial`;
                 this.ctx.fillText(`Счёт: ${this.score}`, 10 / this.dpr, 30 / this.dpr);
             }
         }
