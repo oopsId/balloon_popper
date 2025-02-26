@@ -44,7 +44,7 @@
             font-weight: bold;
             color: #FF5722;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 10; /* Над облаками */
+            z-index: 10;
         }
         #milestone {
             position: absolute;
@@ -61,7 +61,7 @@
             opacity: 0;
             transition: opacity 0.5s;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-            z-index: 10; /* Над облаками */
+            z-index: 10;
         }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js?v=${new Date().getTime()}"></script>
@@ -141,16 +141,15 @@
                 const canvasWidth = this.canvas.width / this.dpr;
                 const canvasHeight = this.canvas.height / this.dpr;
                 
-                // Создаем 3 слоя облаков для параллакса
                 for (let layer = 0; layer < 3; layer++) {
-                    const cloudCount = 3 + layer; // Больше облаков на дальних слоях
+                    const cloudCount = 3 + layer;
                     for (let i = 0; i < cloudCount; i++) {
                         this.clouds.push({
                             x: Math.random() * canvasWidth,
-                            y: Math.random() * canvasHeight * 0.7, // Облака выше середины
-                            size: 200 + layer * 100, // Большие облака, увеличиваются с глубиной
-                            speed: 0.1 + layer * 0.05, // Дальний слой медленнее
-                            opacity: 0.8 - layer * 0.2, // Дальние облака прозрачнее
+                            y: Math.random() * canvasHeight * 0.7,
+                            size: 200 + layer * 100,
+                            speed: 0.1 + layer * 0.05,
+                            opacity: 0.8 - layer * 0.2,
                             layer: layer
                         });
                     }
@@ -218,7 +217,6 @@
                     });
                 }, { once: true });
 
-                // Загружаем изображение облака (можно заменить на свое)
                 this.cloudImage = new Image();
                 this.cloudImage.src = `https://cdn.pixabay.com/photo/2013/07/12/12/58/cloud-146520_1280.png?v=${cacheBuster}`;
                 this.cloudImage.onerror = () => console.error('Ошибка загрузки изображения облака');
@@ -305,16 +303,17 @@
             }
 
             update(deltaTime, timestamp) {
+                // Обновление шариков
                 if (timestamp - this.lastBalloonTime > this.balloonInterval && this.totalBalloonsCreated < this.maxBalloons) {
                     if (this.balloons.length < 20) {
                         this.balloons.push(this.createBalloon());
                         this.totalBalloonsCreated++;
+                        console.log(`Создан шарик #${this.totalBalloonsCreated}, всего шариков: ${this.balloons.length}`); // Отладка
                     }
                     this.lastBalloonTime = timestamp;
                     this.balloonInterval = Math.max(300, this.balloonInterval - 2);
                 }
                 
-                // Обновление шариков
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
@@ -332,12 +331,12 @@
                     }
                 }
 
-                // Обновление облаков (параллакс)
+                // Обновление облаков
                 const canvasWidth = this.canvas.width / this.dpr;
                 this.clouds.forEach(cloud => {
                     cloud.x += cloud.speed * (deltaTime / 16.67);
                     if (cloud.x > canvasWidth) {
-                        cloud.x = -cloud.size; // Возвращаем облако с левой стороны
+                        cloud.x = -cloud.size;
                     }
                 });
             }
@@ -345,27 +344,26 @@
             render() {
                 this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
                 
-                // Рендеринг облаков (с параллаксом)
+                // Рендеринг облаков (сначала, чтобы они были на заднем плане)
                 this.clouds.forEach(cloud => {
                     this.ctx.save();
                     this.ctx.globalAlpha = cloud.opacity;
-                    if (this.cloudImage.complete) {
+                    if (this.cloudImage.complete && this.cloudImage.naturalWidth > 0) {
                         this.ctx.drawImage(
                             this.cloudImage,
                             cloud.x,
                             cloud.y,
                             cloud.size,
-                            cloud.size * 0.6 // Сжимаем по высоте для реалистичности
+                            cloud.size * 0.6
                         );
                     } else {
-                        // Запасной вариант: рисуем прямоугольник, если изображение не загрузилось
                         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
                         this.ctx.fillRect(cloud.x, cloud.y, cloud.size, cloud.size * 0.6);
                     }
                     this.ctx.restore();
                 });
 
-                // Рендеринг шариков поверх облаков
+                // Рендеринг шариков (поверх облаков)
                 this.balloons.forEach(balloon => {
                     this.ctx.save();
                     this.ctx.translate(
