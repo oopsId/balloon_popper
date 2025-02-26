@@ -12,7 +12,7 @@
             margin: 0;
             overflow: hidden;
             background: #87CEEB;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         #gameCanvas {
             position: absolute;
@@ -22,65 +22,153 @@
             height: 100%;
             touch-action: none;
         }
-        #error {
+        /* Единый стиль для UI */
+        #error, #nameInput, #gameOverModal, #milestone, #scoreDisplay {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: #333;
+            text-align: center;
+            padding: 20px;
             position: absolute;
+        }
+        #error {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            text-align: center;
             color: #FFF;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            max-width: 80%;
+            z-index: 20;
         }
         #scoreDisplay {
-            position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(255, 255, 255, 0.7);
-            padding: 17px 21px; /* Уменьшено на ~15% от 20px 25px */
-            border-radius: 20px;
-            font-size: 27px; /* Уменьшено на ~15% от 32px */
-            font-weight: bold;
+            padding: 12px 18px;
+            font-size: 24px;
+            font-weight: 600;
             color: #FF5722;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
             z-index: 10;
         }
+        #achievement {
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: none;
+        }
         #milestone {
-            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.8);
+            font-size: 22px;
+            font-weight: 600;
             color: #FF5722;
-            font-size: 24px;
-            font-weight: bold;
-            padding: 15px 20px;
-            border-radius: 10px;
-            text-align: center;
             opacity: 0;
             transition: opacity 0.5s;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            max-width: 80%;
             z-index: 10;
         }
         #missedBar {
             position: absolute;
             top: 0;
             left: 0;
-            height: 20px;
-            background: rgba(255, 0, 0, 0.3);
-            transition: width 0.3s;
+            height: 12px;
+            background: linear-gradient(to right, rgba(255, 50, 50, 0.4), rgba(255, 50, 50, 1));
+            transition: width 0.3s ease;
             z-index: 9;
+            border-radius: 0 6px 6px 0;
+        }
+        #nameInput {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            z-index: 20;
+        }
+        #nameInput h2, #gameOverModal h2 {
+            color: #FF5722;
+            margin: 0 0 15px 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .input-container {
+            margin: 15px 0;
+        }
+        #playerNameInput {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #FF5722;
+            border-radius: 8px;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        #playerNameInput:focus {
+            border-color: #E64A19;
+        }
+        #startButton, .game-over-button {
+            background: #FF5722;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #startButton:hover, .game-over-button:hover {
+            background: #E64A19;
+        }
+        #gameOverModal {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            z-index: 20;
+            display: none;
+        }
+        .game-over-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            gap: 10px;
         }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js?v=${new Date().getTime()}"></script>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
-    <div id="scoreDisplay">Счёт: 0</div>
+    <div id="scoreDisplay">Счёт: 0 <div id="achievement"></div></div>
     <div id="milestone"></div>
     <div id="missedBar" style="width: 0;"></div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
+    
+    <div id="nameInput">
+        <h2>Привет!</h2>
+        <p>Как тебя зовут?</p>
+        <div class="input-container">
+            <input type="text" id="playerNameInput" placeholder="Введите ваше имя" maxlength="20">
+        </div>
+        <button id="startButton">Начать игру</button>
+    </div>
+    
+    <div id="gameOverModal">
+        <h2>Игра окончена!</h2>
+        <p id="gameOverText"></p>
+        <div class="game-over-buttons">
+            <button class="game-over-button" id="playAgainButton">Играть снова</button>
+            <button class="game-over-button" id="shareScoreButton">Поделиться</button>
+        </div>
+    </div>
+    
     <script>
         const cacheBuster = new Date().getTime();
 
@@ -91,7 +179,7 @@
                 this.initGameState();
                 this.loadAssets();
                 this.setupEventListeners();
-                this.startGameLoop();
+                this.showNameInput();
             }
 
             initTelegram() {
@@ -100,12 +188,10 @@
                     document.getElementById('error').style.display = 'block';
                     throw new Error('Not in Telegram');
                 }
-
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
-                
-                window.Telegram.WebApp.MainButton.setText('Сохранить счёт');
-                window.Telegram.WebApp.MainButton.hide(); // Скрываем кнопку до конца игры
+                window.Telegram.WebApp.MainButton.setText('Поделиться');
+                window.Telegram.WebApp.MainButton.hide();
             }
 
             initCanvas() {
@@ -117,8 +203,16 @@
                 window.addEventListener('resize', () => this.resizeCanvas());
                 
                 this.scoreDisplay = document.getElementById('scoreDisplay');
+                this.achievementElement = document.getElementById('achievement');
                 this.milestoneElement = document.getElementById('milestone');
                 this.missedBar = document.getElementById('missedBar');
+                this.nameInput = document.getElementById('nameInput');
+                this.playerNameInput = document.getElementById('playerNameInput');
+                this.startButton = document.getElementById('startButton');
+                this.gameOverModal = document.getElementById('gameOverModal');
+                this.gameOverText = document.getElementById('gameOverText');
+                this.playAgainButton = document.getElementById('playAgainButton');
+                this.shareScoreButton = document.getElementById('shareScoreButton');
             }
             
             resizeCanvas() {
@@ -131,44 +225,49 @@
             initGameState() {
                 this.balloons = [];
                 this.score = 0;
-                this.missedBalloons = 0; // Счетчик упущенных шариков
+                this.missedBalloons = 0;
                 this.lastBalloonTime = 0;
-                this.balloonInterval = 500;
+                this.balloonInterval = 1000; // Начинаем с медленного появления
                 this.maxBalloons = 10000;
                 this.totalBalloonsCreated = 0;
                 this.lastMilestone = 0;
                 this.gameOver = false;
+                this.gameStarted = false;
                 this.playerName = window.Telegram.WebApp.initDataUnsafe?.user?.first_name || "Игрок";
+                this.achievements = {
+                    green: false,
+                    purple: false
+                };
                 this.encouragements = [
-                    `${this.playerName}, ты просто шариковый ниндзя!`, 
-                    `Давай, ${this.playerName}, лови их всех!`, 
-                    `${this.playerName}, шарики дрожат от страха!`, 
-                    `Ого, ${this.playerName}, ты мастер лопанья!`, 
-                    `${this.playerName}, шарики не успевают от тебя сбежать!`, 
-                    `Круто, ${this.playerName}, ты в ударе!`, 
-                    `${this.playerName}, твои пальцы — это шариковый кошмар!`, 
-                    `Так держать, ${this.playerName}, ты чемпион по шарикам!`, 
-                    `${this.playerName}, шарики сдаются без боя!`, 
-                    `Вау, ${this.playerName}, ты лопаешь быстрее ветра!`, 
-                    `${this.playerName}, шарики в панике!`, 
-                    `Супер, ${this.playerName}, ты их всех порвешь!`, 
-                    `${this.playerName}, ты шариковый терминатор!`, 
-                    `Класс, ${this.playerName}, шарики в шоке!`, 
-                    `${this.playerName}, ты король лопанья!`, 
-                    `Эй, ${this.playerName}, шарики просят пощады!`, 
-                    `${this.playerName}, твоя скорость — это что-то!`, 
-                    `Браво, ${this.playerName}, шарики падают как мухи!`, 
-                    `${this.playerName}, ты шариковый бог!`, 
-                    `Ох, ${this.playerName}, шарики мечтают о покое!`, 
-                    `${this.playerName}, твои руки — шариковая буря!`, 
-                    `Ух ты, ${this.playerName}, шарики не знают, куда бежать!`, 
-                    `${this.playerName}, ты просто шариковый маг!`, 
-                    `Да, ${this.playerName}, шарики в ауте!`, 
-                    `${this.playerName}, ты лопаешь как профи!`, 
-                    `Йо, ${this.playerName}, шарики тебя боятся!`, 
-                    `${this.playerName}, твоя ловкость — легенда!`, 
-                    `Кайф, ${this.playerName}, шарики исчезают на глазах!`, 
-                    `${this.playerName}, ты шариковый разрушитель!`, 
+                    `${this.playerName}, ты просто шариковый ниндзя!`,
+                    `Давай, ${this.playerName}, лови их всех!`,
+                    `${this.playerName}, шарики дрожат от страха!`,
+                    `Ого, ${this.playerName}, ты мастер лопанья!`,
+                    `${this.playerName}, шарики не успевают сбежать!`,
+                    `Круто, ${this.playerName}, ты в ударе!`,
+                    `${this.playerName}, твои пальцы — шариковый кошмар!`,
+                    `Так держать, ${this.playerName}, ты чемпион!`,
+                    `${this.playerName}, шарики сдаются без боя!`,
+                    `Вау, ${this.playerName}, ты лопаешь быстрее ветра!`,
+                    `${this.playerName}, шарики в панике!`,
+                    `Супер, ${this.playerName}, ты их всех порвешь!`,
+                    `${this.playerName}, ты шариковый терминатор!`,
+                    `Класс, ${this.playerName}, шарики в шоке!`,
+                    `${this.playerName}, ты король лопанья!`,
+                    `Эй, ${this.playerName}, шарики просят пощады!`,
+                    `${this.playerName}, твоя скорость — это что-то!`,
+                    `Браво, ${this.playerName}, шарики падают как мухи!`,
+                    `${this.playerName}, ты шариковый бог!`,
+                    `Ох, ${this.playerName}, шарики мечтают о покое!`,
+                    `${this.playerName}, твои руки — шариковая буря!`,
+                    `Ух ты, ${this.playerName}, шарики не знают, куда бежать!`,
+                    `${this.playerName}, ты просто шариковый маг!`,
+                    `Да, ${this.playerName}, шарики в ауте!`,
+                    `${this.playerName}, ты лопаешь как профи!`,
+                    `Йо, ${this.playerName}, шарики тебя боятся!`,
+                    `${this.playerName}, твоя ловкость — легенда!`,
+                    `Кайф, ${this.playerName}, шарики исчезают на глазах!`,
+                    `${this.playerName}, ты шариковый разрушитель!`,
                     `Эпично, ${this.playerName}, шарики в нокауте!`
                 ];
                 this.clouds = [];
@@ -181,7 +280,6 @@
                 this.clouds = [];
                 const canvasWidth = this.canvas.width / this.dpr;
                 const canvasHeight = this.canvas.height / this.dpr;
-                
                 for (let layer = 0; layer < 3; layer++) {
                     const cloudCount = 3 + layer;
                     for (let i = 0; i < cloudCount; i++) {
@@ -200,19 +298,42 @@
             updateScore(newScore) {
                 this.score = newScore;
                 this.scoreDisplay.textContent = `Счёт: ${this.score}`;
-                
+                if (this.achievements.green || this.achievements.purple) {
+                    this.achievementElement.style.display = 'block';
+                    this.achievementElement.style.backgroundImage = this.achievements.purple ? 
+                        'url("https://cdn.pixabay.com/photo/2016/09/01/08/24/smiley-1635449_1280.png")' : 
+                        'url("https://cdn.pixabay.com/photo/2014/04/02/10/42/medal-304595_1280.png")';
+                }
                 if (this.score > 0 && this.score % 50 === 0 && this.score !== this.lastMilestone) {
                     this.showMilestone();
                     this.lastMilestone = this.score;
                 }
-                if (this.score % 20 === 0 && this.score > 0) {
+                if (this.score % 5 === 0 && this.score > 0) { // Более частые события
                     this.triggerRandomEvent();
                 }
+                // Проверка достижений
+                if (this.score >= 200 && !this.achievements.purple) {
+                    this.achievements.purple = true;
+                    this.showMilestone(`${this.playerName}, невероятно! Фиолетовый шарик разблокирован!`);
+                } else if (this.score >= 100 && !this.achievements.green) {
+                    this.achievements.green = true;
+                    this.showMilestone(`${this.playerName}, браво! Зеленый шарик разблокирован!`);
+                }
+                this.adjustBalloonDensity();
             }
-            
-            showMilestone() {
-                const encouragement = this.encouragements[Math.floor(Math.random() * this.encouragements.length)];
-                this.milestoneElement.textContent = `${encouragement} ${this.score} шариков!`;
+
+            adjustBalloonDensity() {
+                // Густота шариков растет с увеличением очков
+                const maxScoreThreshold = 1000; // Максимальная сложность на 1000 очков
+                const minInterval = 300; // Самый быстрый интервал
+                const densityFactor = Math.min(1, this.score / maxScoreThreshold);
+                this.balloonInterval = 1000 - (700 * densityFactor); // От 1000 до 300 мс
+            }
+
+            showMilestone(customMessage = null) {
+                const message = customMessage || 
+                    `${this.encouragements[Math.floor(Math.random() * this.encouragements.length)]} ${this.score} шариков!`;
+                this.milestoneElement.textContent = message;
                 this.milestoneElement.style.opacity = '1';
                 setTimeout(() => {
                     this.milestoneElement.style.opacity = '0';
@@ -220,24 +341,25 @@
             }
 
             showGameOver() {
-                this.milestoneElement.textContent = `${this.playerName}, вы молодец! Лопнуто: ${this.score}, упущено: ${this.missedBalloons}. Начать заново?`;
-                this.milestoneElement.style.opacity = '1';
-                window.Telegram.WebApp.MainButton.show();
-                setTimeout(() => {
-                    this.milestoneElement.style.opacity = '0';
-                }, 5000);
+                this.gameOver = true;
+                this.gameOverText.textContent = `${this.playerName}, вы молодец! Лопнуто: ${this.score}, упущено: ${this.missedBalloons}`;
+                this.gameOverModal.style.display = 'block';
             }
 
             loadAssets() {
                 this.balloonSources = [
                     `https://oopsid.github.io/balloon_popper/assets/balloon_red.png?v=${cacheBuster}`,
                     `https://oopsid.github.io/balloon_popper/assets/balloon_blue.png?v=${cacheBuster}`,
-                    `https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png?v=${cacheBuster}`
+                    `https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png?v=${cacheBuster}`,
+                    `https://cdn.pixabay.com/photo/2013/07/12/14/07/balloon-147119_1280.png?v=${cacheBuster}`, // Зеленый
+                    `https://cdn.pixabay.com/photo/2013/07/12/14/07/balloon-147117_1280.png?v=${cacheBuster}`  // Фиолетовый
                 ];
                 this.poppedSources = [
                     `https://oopsid.github.io/balloon_popper/assets/popped_red.png?v=${cacheBuster}`,
                     `https://oopsid.github.io/balloon_popper/assets/popped_blue.png?v=${cacheBuster}`,
-                    `https://oopsid.github.io/balloon_popper/assets/popped_yellow.png?v=${cacheBuster}`
+                    `https://oopsid.github.io/balloon_popper/assets/popped_yellow.png?v=${cacheBuster}`,
+                    `https://oopsid.github.io/balloon_popper/assets/popped_red.png?v=${cacheBuster}`, // Зеленый (заглушка)
+                    `https://oopsid.github.io/balloon_popper/assets/popped_blue.png?v=${cacheBuster}` // Фиолетовый (заглушка)
                 ];
                 
                 this.balloonImages = this.balloonSources.map(src => {
@@ -264,15 +386,9 @@
                 }
                 this.currentSoundIndex = 0;
 
-                document.addEventListener('touchstart', () => {
-                    this.popSounds.forEach(sound => {
-                        sound.play().then(() => sound.pause()).catch(() => {});
-                    });
-                }, { once: true });
-
                 this.cloudImage = new Image();
                 this.cloudImage.src = `https://cdn.pixabay.com/photo/2013/07/12/12/58/cloud-146520_1280.png?v=${cacheBuster}`;
-                this.cloudImage.onerror = () => console.error('Ошибка загрузки изображения облака');
+                this.cloudImage.onerror = () => console.error('Ошибка загрузки облака');
 
                 this.eventImages = {
                     plane: new Image(),
@@ -286,26 +402,41 @@
 
             setupEventListeners() {
                 this.canvas.addEventListener('touchstart', (e) => this.handleTouch(e));
-                
-                window.Telegram.WebApp.onEvent('mainButtonClicked', () => {
-                    if (this.gameOver) {
-                        const data = JSON.stringify({ score: this.score, missed: this.missedBalloons });
-                        window.Telegram.WebApp.sendData(data);
-                        this.resetGame();
-                        console.log('Счёт отправлен и игра перезапущена:', this.score);
-                    }
+                this.startButton.addEventListener('click', () => this.startGame());
+                this.playAgainButton.addEventListener('click', () => this.resetGame());
+                this.shareScoreButton.addEventListener('click', () => {
+                    const data = JSON.stringify({ score: this.score, missed: this.missedBalloons });
+                    window.Telegram.WebApp.sendData(data);
+                    this.resetGame();
                 });
             }
 
+            showNameInput() {
+                this.nameInput.style.display = 'block';
+                this.gameOverModal.style.display = 'none';
+                this.playerNameInput.value = this.playerName;
+            }
+
+            startGame() {
+                const playerName = this.playerNameInput.value.trim();
+                this.playerName = playerName || "Игрок";
+                this.nameInput.style.display = 'none';
+                this.encouragements = this.encouragements.map(msg => msg.replace(/Игрок/g, this.playerName));
+                this.gameStarted = true;
+                this.startGameLoop();
+            }
+
             resetGame() {
+                this.gameOverModal.style.display = 'none';
                 this.balloons = [];
                 this.score = 0;
                 this.missedBalloons = 0;
                 this.lastBalloonTime = 0;
-                this.balloonInterval = 500;
+                this.balloonInterval = 1000;
                 this.totalBalloonsCreated = 0;
                 this.lastMilestone = 0;
                 this.gameOver = false;
+                this.gameStarted = true;
                 this.events = [];
                 this.updateScore(0);
                 this.missedBar.style.width = '0';
@@ -313,20 +444,18 @@
             }
 
             handleTouch(e) {
-                if (this.gameOver) return;
+                if (!this.gameStarted || this.gameOver) return;
                 e.preventDefault();
-                
                 for (let t = 0; t < e.touches.length; t++) {
                     const touch = e.touches[t];
                     const touchX = touch.clientX;
                     const touchY = touch.clientY;
-                    
                     for (let i = this.balloons.length - 1; i >= 0; i--) {
                         const balloon = this.balloons[i];
                         if (!balloon.popped && this.isPointInBalloon(touchX, touchY, balloon)) {
                             balloon.popped = true;
                             balloon.popTime = Date.now();
-                            balloon.popOpacity = 1; // Для эффекта затухания
+                            balloon.popOpacity = 1;
                             this.updateScore(this.score + 1);
                             this.playPopSound();
                             break;
@@ -334,32 +463,32 @@
                     }
                 }
             }
-            
+
             playPopSound() {
                 const sound = this.popSounds[this.currentSoundIndex];
                 sound.currentTime = 0;
-                sound.play().catch(error => console.error('Ошибка воспроизведения звука:', error));
+                sound.play().catch(error => console.error('Ошибка звука:', error));
                 this.currentSoundIndex = (this.currentSoundIndex + 1) % this.popSounds.length;
             }
-            
+
             isPointInBalloon(x, y, balloon) {
                 const centerX = balloon.x + balloon.size / 2;
                 const centerY = balloon.y + balloon.size / 2;
                 const radius = balloon.size * 0.4;
-                const distance = Math.sqrt(
-                    Math.pow(x - centerX, 2) + 
-                    Math.pow(y - centerY, 2)
-                );
+                const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
                 return distance <= radius;
             }
 
             createBalloon() {
                 const size = 100;
-                const index = Math.floor(Math.random() * this.balloonImages.length);
+                let availableBalloons = [0, 1, 2];
+                if (this.achievements.green) availableBalloons.push(3);
+                if (this.achievements.purple) availableBalloons.push(4);
+                const index = availableBalloons[Math.floor(Math.random() * availableBalloons.length)];
                 return {
                     x: Math.random() * (this.canvas.width / this.dpr - size),
                     y: this.canvas.height / this.dpr + size,
-                    dy: -(2 + Math.random() * 3),
+                    dy: -(2 + Math.random() * 2),
                     size: size,
                     image: this.balloonImages[index],
                     poppedImage: this.poppedImages[index],
@@ -378,7 +507,6 @@
                 const direction = Math.random() < 0.5 ? 1 : -1;
                 const speed = (1 + Math.random() * 2) * direction;
                 const yPos = Math.random() * canvasHeight * 0.5;
-
                 this.events.push({
                     type: eventType,
                     x: direction > 0 ? -200 : canvasWidth + 200,
@@ -397,30 +525,23 @@
             gameLoop(timestamp) {
                 const deltaTime = timestamp - this.lastFrameTime;
                 this.lastFrameTime = timestamp;
-                
-                this.update(deltaTime, timestamp);
+                if (this.gameStarted && !this.gameOver) {
+                    this.update(deltaTime, timestamp);
+                }
                 this.render();
-                
                 requestAnimationFrame(timestamp => this.gameLoop(timestamp));
             }
 
             update(deltaTime, timestamp) {
-                if (this.gameOver) return;
-
-                // Обновление шариков
                 if (timestamp - this.lastBalloonTime > this.balloonInterval && this.totalBalloonsCreated < this.maxBalloons) {
                     this.balloons.push(this.createBalloon());
                     this.totalBalloonsCreated++;
                     this.lastBalloonTime = timestamp;
-                    // Уменьшаем густоту к концу игры
-                    this.balloonInterval = Math.min(1000, this.balloonInterval + (this.totalBalloonsCreated / this.maxBalloons) * 5);
                 }
-                
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
-                    
                     if (balloon.popped) {
-                        balloon.popOpacity -= deltaTime / 200; // Быстрое затухание за 200мс
+                        balloon.popOpacity -= deltaTime / 200;
                         if (balloon.popOpacity <= 0) {
                             this.balloons.splice(i, 1);
                             continue;
@@ -433,23 +554,16 @@
                             this.missedBalloons++;
                             this.updateMissedBar();
                             if (this.missedBalloons >= 100) {
-                                this.gameOver = true;
                                 this.showGameOver();
                             }
                         }
                     }
                 }
-
-                // Обновление облаков
                 const canvasWidth = this.canvas.width / this.dpr;
                 this.clouds.forEach(cloud => {
                     cloud.x += cloud.speed * (deltaTime / 16.67);
-                    if (cloud.x > canvasWidth) {
-                        cloud.x = -cloud.size;
-                    }
+                    if (cloud.x > canvasWidth) cloud.x = -cloud.size;
                 });
-
-                // Обновление событий
                 for (let i = this.events.length - 1; i >= 0; i--) {
                     const event = this.events[i];
                     event.x += event.speed * (deltaTime / 16.67);
@@ -467,36 +581,14 @@
 
             render() {
                 this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
-                
-                // Рендеринг облаков
                 this.clouds.forEach(cloud => {
                     this.ctx.save();
                     this.ctx.globalAlpha = cloud.opacity;
                     if (this.cloudImage.complete && this.cloudImage.naturalWidth > 0) {
-                        this.ctx.drawImage(
-                            this.cloudImage,
-                            cloud.x,
-                            cloud.y,
-                            cloud.size,
-                            cloud.size * 0.6
-                        );
-                    } else {
-                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        const centerX = cloud.x + cloud.size / 2;
-                        const centerY = cloud.y + cloud.size / 3;
-                        const radius = cloud.size / 3;
-                        this.ctx.beginPath();
-                        this.ctx.arc(centerX - radius/1.5, centerY, radius, 0, Math.PI * 2);
-                        this.ctx.arc(centerX + radius/1.5, centerY, radius * 0.8, 0, Math.PI * 2);
-                        this.ctx.arc(centerX, centerY - radius/2, radius * 0.9, 0, Math.PI * 2);
-                        this.ctx.arc(centerX - radius, centerY + radius/3, radius * 0.7, 0, Math.PI * 2);
-                        this.ctx.arc(centerX + radius/2, centerY + radius/3, radius * 0.6, 0, Math.PI * 2);
-                        this.ctx.fill();
+                        this.ctx.drawImage(this.cloudImage, cloud.x, cloud.y, cloud.size, cloud.size * 0.6);
                     }
                     this.ctx.restore();
                 });
-
-                // Рендеринг событий
                 this.events.forEach(event => {
                     this.ctx.save();
                     this.ctx.globalAlpha = event.opacity;
@@ -506,50 +598,29 @@
                     }
                     this.ctx.restore();
                 });
-
-                // Рендеринг шариков
                 this.balloons.forEach(balloon => {
                     this.ctx.save();
                     this.ctx.translate(balloon.x + balloon.size / 2, balloon.y + balloon.size / 2);
                     this.ctx.rotate(Math.sin(this.lastFrameTime / 1000) * balloon.rotation);
                     if (balloon.popped) {
                         this.ctx.globalAlpha = balloon.popOpacity;
-                        this.ctx.drawImage(
-                            balloon.poppedImage, 
-                            -balloon.size / 2, 
-                            -balloon.size / 2, 
-                            balloon.size, 
-                            balloon.size
-                        );
+                        this.ctx.drawImage(balloon.poppedImage, -balloon.size / 2, -balloon.size / 2, balloon.size, balloon.size);
                     } else {
-                        this.ctx.drawImage(
-                            balloon.image, 
-                            -balloon.size / 2, 
-                            -balloon.size / 2, 
-                            balloon.size, 
-                            balloon.size
-                        );
+                        this.ctx.drawImage(balloon.image, -balloon.size / 2, -balloon.size / 2, balloon.size, balloon.size);
                     }
                     this.ctx.restore();
                 });
             }
         }
 
-        document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
         window.onload = () => {
             if ('caches' in window) {
-                caches.keys().then(keys => {
-                    keys.forEach(key => caches.delete(key));
-                });
+                caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
             }
-
             try {
-                if (window.gameInstance) {
-                    window.gameInstance = null;
-                }
+                if (window.gameInstance) window.gameInstance = null;
                 window.gameInstance = new BalloonPopperGame();
             } catch (e) {
                 console.error('Ошибка инициализации игры:', e);
