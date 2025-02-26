@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Лопай шарики</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #87CEEB;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #FFF;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
+    <script>
+        class BalloonPopperGame {
+            constructor() {
+                this.initTelegram();
+                this.initCanvas();
+                this.initGameState();
+                this.loadAssets();
+                this.setupEventListeners();
+                this.startGameLoop();
+            }
+
+            initTelegram() {
+                if (!window.Telegram || !window.Telegram.WebApp) {
+                    document.getElementById('gameCanvas').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    throw new Error('Not in Telegram');
+                }
+
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+                
+                window.Telegram.WebApp.MainButton.setText('Сохранить счёт');
+                window.Telegram.WebApp.MainButton.show();
+            }
+
+            initCanvas() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.dpr = window.devicePixelRatio || 1;
+                
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+            
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth * this.dpr;
+                this.canvas.height = window.innerHeight * this.dpr;
+                this.ctx.scale(this.dpr, this.dpr);
+            }
+
+            initGameState() {
+                this.balloons = [];
+                this.score = 0;
+                this.lastBalloonTime = 0;
+                this.balloonInterval = 1000;
+                this.maxBalloons = 10;
+            }
+
+            loadAssets() {
+                this.balloonSources = [
+                    'https://oopsid.github.io/balloon_popper/assets/balloon_red.png',
+                    'https://oopsid.github.io/balloon_popper/assets/balloon_blue.png',
+                    'https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png'
+                ];
+                
+                this.balloonImages = this.balloonSources.map(src => {
+                    const img = new Image();
+                    img.src = src;
+                    img.onerror = () => console.error(`Ошибка загрузки изображения: ${src}`);
+                    return img;
+                });
+                
+                this.poppedImage = new Image();
+                this.poppedImage.src = 'https://oopsid.github.io/balloon_popper/assets/popped_balloon.png';
+                this.poppedImage.onerror = () => console.error('Ошибка загрузки popped_balloon.png');
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('touchstart', (e) => this.handleTouch(e));
+                
+                window.Telegram.WebApp.onEvent('mainButtonClicked', () => {
+                    const data = JSON.stringify(this.score);
+                    window.Telegram.WebApp.sendData(data);
+                });
+            }
+
+            handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const touchX = touch.clientX;
+                const touchY = touch.clientY;
+                
+                this.balloons.forEach(balloon => {
+                    if (!balloon.popped && this.isPointInBalloon(touchX, touchY, balloon)) {
+                        balloon.popped = true;
+                        balloon.popTime = Date.now();
+                        this.score += 1;
+                    }
+                });
+            }
+            
+            isPointInBalloon(x, y, balloon) {
+                return x > balloon.x && 
+                       x < balloon.x + balloon.size && 
+                       y > balloon.y && 
+                       y < balloon.y + balloon.size;
+            }
+
+            createBalloon() {
+                const size = 64 / this.dpr; // Масштабируем размер с учётом DPR
+                return {
+                    x: Math.random() * (this.canvas.width / this.dpr - size),
+                    y: this.canvas.height / this.dpr + size,
+                    dy: -(1 + Math.random() * 2),
+                    size: size,
+                    image: this.balloonImages[Math.floor(Math.random() * this.balloonImages.length)],
+                    popped: false,
+                    popTime: 0
+                };
+            }
+
+            startGameLoop() {
+                this.lastFrameTime = performance.now();
+                requestAnimationFrame(timestamp => this.gameLoop(timestamp));
+            }
+
+            gameLoop(timestamp) {
+                const deltaTime = timestamp - this.lastFrameTime;
+                this.lastFrameTime = timestamp;
+                
+                this.update(deltaTime, timestamp);
+                this.render();
+                
+                requestAnimationFrame(timestamp => this.gameLoop(timestamp));
+            }
+
+            update(deltaTime, timestamp) {
+                if (timestamp - this.lastBalloonTime > this.balloonInterval && this.balloons.length < this.maxBalloons) {
+                    this.balloons.push(this.createBalloon());
+                    this.lastBalloonTime = timestamp;
+                }
+                
+                for (let i = this.balloons.length - 1; i >= 0; i--) {
+                    const balloon = this.balloons[i];
+                    
+                    if (balloon.popped) {
+                        if (timestamp - balloon.popTime > 500) {
+                            this.balloons.splice(i, 1);
+                        }
+                    } else {
+                        balloon.y += balloon.dy * (deltaTime / 16.67);
+                        if (balloon.y < -balloon.size) {
+                            this.balloons.splice(i, 1);
+                        }
+                    }
+                }
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
+                
+                this.balloons.forEach(balloon => {
+                    if (balloon.popped) {
+                        this.ctx.drawImage(this.poppedImage, balloon.x, balloon.y, balloon.size, balloon.size);
+                    } else {
+                        this.ctx.drawImage(balloon.image, balloon.x, balloon.y, balloon.size, balloon.size);
+                    }
+                });
+                
+                this.ctx.fillStyle = '#000';
+                this.ctx.font = `${20 / this.dpr}px Arial`; // Масштабируем шрифт с DPR
+                this.ctx.fillText(`Счёт: ${this.score}`, 10 / this.dpr, 30 / this.dpr);
+            }
+        }
+
+        window.onload = () => {
+            new BalloonPopperGame();
+        };
+    </script>
+</body>
+</html>
