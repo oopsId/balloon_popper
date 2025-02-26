@@ -35,9 +35,9 @@
             top: 10px;
             left: 10px;
             background: rgba(255, 255, 255, 0.7);
-            padding: 15px 20px; /* Увеличен padding */
+            padding: 20px 25px;
             border-radius: 20px;
-            font-size: 24px; /* Увеличен размер шрифта */
+            font-size: 32px;
             font-weight: bold;
             color: #FF5722;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -64,7 +64,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="scoreDisplay">Счёт: 0</div>
-    <div id="milestone">Поздравляем! 30 шариков!</div>
+    <div id="milestone">Поздравляем! 50 шариков!</div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
     <script>
         class BalloonPopperGame {
@@ -113,9 +113,15 @@
                 this.balloons = [];
                 this.score = 0;
                 this.lastBalloonTime = 0;
-                this.balloonInterval = 1000;
-                this.maxBalloons = 50; // Увеличено до 50
+                this.balloonInterval = 500; // Уменьшен интервал для непрерывности
+                this.maxBalloons = 2000; // До 2000 шариков
                 this.lastMilestone = 0;
+                this.encouragements = [
+                    "Отлично, продолжай!", "Ты в ударе!", "Супер, так держать!", 
+                    "Невероятно!", "Ты мастер шариков!", "Вперед к рекорду!",
+                    "Круто, не останавливайся!", "Фантастика!", "Ты чемпион!",
+                    "Просто wow!"
+                ];
                 this.updateScore(0);
             }
 
@@ -123,14 +129,15 @@
                 this.score = newScore;
                 this.scoreDisplay.textContent = `Счёт: ${this.score}`;
                 
-                if (this.score > 0 && this.score % 30 === 0 && this.score !== this.lastMilestone) {
+                if (this.score > 0 && this.score % 50 === 0 && this.score !== this.lastMilestone) {
                     this.showMilestone();
                     this.lastMilestone = this.score;
                 }
             }
             
             showMilestone() {
-                this.milestoneElement.textContent = `Поздравляем! ${this.score} шариков!`;
+                const encouragement = this.encouragements[Math.min(Math.floor(this.score / 50) - 1, this.encouragements.length - 1)];
+                this.milestoneElement.textContent = `${encouragement} ${this.score} шариков!`;
                 this.milestoneElement.style.opacity = '1';
                 setTimeout(() => {
                     this.milestoneElement.style.opacity = '0';
@@ -167,7 +174,7 @@
                 for (let i = 0; i < 5; i++) {
                     const sound = new Audio('https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3');
                     sound.preload = 'auto';
-                    sound.load(); // Предзагрузка звука сразу
+                    sound.load();
                     sound.volume = 0.6;
                     this.popSounds.push(sound);
                 }
@@ -180,7 +187,7 @@
                 window.Telegram.WebApp.onEvent('mainButtonClicked', () => {
                     const data = JSON.stringify({ score: this.score });
                     window.Telegram.WebApp.sendData(data);
-                    console.log('Счёт отправлен:', this.score); // Для отладки
+                    console.log('Счёт отправлен:', this.score);
                 });
             }
 
@@ -224,12 +231,12 @@
             }
 
             createBalloon() {
-                const size = 100;
+                const size = 100; // Вернул размер 100
                 const index = Math.floor(Math.random() * this.balloonImages.length);
                 return {
                     x: Math.random() * (this.canvas.width / this.dpr - size),
                     y: this.canvas.height / this.dpr + size,
-                    dy: -(1 + Math.random() * 2),
+                    dy: -(2 + Math.random() * 3), // Увеличена скорость (было 1 + Math.random() * 2)
                     size: size,
                     image: this.balloonImages[index],
                     poppedImage: this.poppedImages[index],
@@ -255,21 +262,23 @@
             }
 
             update(deltaTime, timestamp) {
-                if (timestamp - this.lastBalloonTime > this.balloonInterval && this.balloons.length < this.maxBalloons) {
-                    this.balloons.push(this.createBalloon());
+                if (timestamp - this.lastBalloonTime > this.balloonInterval && this.score < 2000) {
+                    if (this.balloons.length < 20) { // Ограничение активных шариков на экране
+                        this.balloons.push(this.createBalloon());
+                    }
                     this.lastBalloonTime = timestamp;
-                    this.balloonInterval = Math.max(500, this.balloonInterval - 5);
+                    this.balloonInterval = Math.max(300, this.balloonInterval - 2); // Ускоряем появление
                 }
                 
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
-                    if (balloon.popped) {
-                        if (timestamp - balloon.popTime > 300) {
-                            this.balloons.splice(i, 1);
-                            continue; // Продолжаем цикл после удаления
-                        }
-                    } else {
+                    if (balloon.popped && (timestamp - balloon.popTime > 200)) {
+                        this.balloons.splice(i, 1);
+                        continue;
+                    }
+                    
+                    if (!balloon.popped) {
                         balloon.y += balloon.dy * (deltaTime / 16.67);
                         balloon.x += Math.sin(timestamp / 1000 + i) * 0.5;
                         if (balloon.y < -balloon.size) {
