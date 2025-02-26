@@ -122,7 +122,7 @@
                 this.score = 0;
                 this.lastBalloonTime = 0;
                 this.balloonInterval = 500;
-                this.maxBalloons = 2000;
+                this.maxBalloons = 10000; // Увеличиваем максимальное количество шариков
                 this.totalBalloonsCreated = 0;
                 this.lastMilestone = 0;
                 this.encouragements = [
@@ -217,9 +217,28 @@
                     });
                 }, { once: true });
 
+                // Загружаем новое изображение облака
                 this.cloudImage = new Image();
                 this.cloudImage.src = `https://cdn.pixabay.com/photo/2013/07/12/12/58/cloud-146520_1280.png?v=${cacheBuster}`;
                 this.cloudImage.onerror = () => console.error('Ошибка загрузки изображения облака');
+                
+                // Резервное изображение для облака (SVG)
+                this.cloudSvg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
+                    <path d="M47,56 C47,56 0,56 0,56 C0,56 0,99 0,99 C0,99 47,99 47,99 C47,99 47,56 47,56 Z" fill="#fff" opacity="0.5"/>
+                    <circle cx="79" cy="78" r="30" fill="#fff" opacity="0.6"/>
+                    <circle cx="117" cy="78" r="20" fill="#fff" opacity="0.6"/>
+                    <circle cx="148" cy="78" r="22" fill="#fff" opacity="0.6"/>
+                    <circle cx="165" cy="68" r="18" fill="#fff" opacity="0.6"/>
+                    <circle cx="43" cy="78" r="28" fill="#fff" opacity="0.7"/>
+                    <circle cx="20" cy="68" r="20" fill="#fff" opacity="0.7"/>
+                </svg>
+                `;
+                const svgBlob = new Blob([this.cloudSvg], {type: 'image/svg+xml'});
+                this.cloudSvgUrl = URL.createObjectURL(svgBlob);
+                
+                this.backupCloudImage = new Image();
+                this.backupCloudImage.src = this.cloudSvgUrl;
             }
 
             setupEventListeners() {
@@ -305,19 +324,19 @@
             update(deltaTime, timestamp) {
                 // Обновление шариков
                 if (timestamp - this.lastBalloonTime > this.balloonInterval && this.totalBalloonsCreated < this.maxBalloons) {
-                    if (this.balloons.length < 20) {
-                        this.balloons.push(this.createBalloon());
-                        this.totalBalloonsCreated++;
-                        console.log(`Создан шарик #${this.totalBalloonsCreated}, всего шариков: ${this.balloons.length}`); // Отладка
-                    }
+                    // Удаляем проверку if (this.balloons.length < 20), чтобы шарики продолжали создаваться
+                    this.balloons.push(this.createBalloon());
+                    this.totalBalloonsCreated++;
+                    
                     this.lastBalloonTime = timestamp;
-                    this.balloonInterval = Math.max(300, this.balloonInterval - 2);
+                    // Уменьшаем интервал появления шариков для постепенного ускорения игры
+                    this.balloonInterval = Math.max(200, this.balloonInterval - 0.5);
                 }
                 
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
-                    if (balloon.popped && (timestamp - balloon.popTime > 50)) {
+                    if (balloon.popped && (timestamp - balloon.popTime > 300)) { // Увеличиваем время отображения лопнутых шариков
                         this.balloons.splice(i, 1);
                         continue;
                     }
@@ -348,6 +367,8 @@
                 this.clouds.forEach(cloud => {
                     this.ctx.save();
                     this.ctx.globalAlpha = cloud.opacity;
+                    
+                    // Проверяем, загрузилось ли основное изображение облака
                     if (this.cloudImage.complete && this.cloudImage.naturalWidth > 0) {
                         this.ctx.drawImage(
                             this.cloudImage,
@@ -356,9 +377,32 @@
                             cloud.size,
                             cloud.size * 0.6
                         );
-                    } else {
+                    } 
+                    // Пробуем использовать резервное SVG-изображение
+                    else if (this.backupCloudImage.complete && this.backupCloudImage.naturalWidth > 0) {
+                        this.ctx.drawImage(
+                            this.backupCloudImage,
+                            cloud.x,
+                            cloud.y,
+                            cloud.size,
+                            cloud.size * 0.6
+                        );
+                    } 
+                    // Если ни одно изображение не загрузилось, рисуем круглые облака
+                    else {
                         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        this.ctx.fillRect(cloud.x, cloud.y, cloud.size, cloud.size * 0.6);
+                        // Рисуем группу перекрывающихся кругов, чтобы сделать похожим на облако
+                        const centerX = cloud.x + cloud.size / 2;
+                        const centerY = cloud.y + cloud.size / 3;
+                        const radius = cloud.size / 3;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(centerX - radius/1.5, centerY, radius, 0, Math.PI * 2);
+                        this.ctx.arc(centerX + radius/1.5, centerY, radius * 0.8, 0, Math.PI * 2);
+                        this.ctx.arc(centerX, centerY - radius/2, radius * 0.9, 0, Math.PI * 2);
+                        this.ctx.arc(centerX - radius, centerY + radius/3, radius * 0.7, 0, Math.PI * 2);
+                        this.ctx.arc(centerX + radius/2, centerY + radius/3, radius * 0.6, 0, Math.PI * 2);
+                        this.ctx.fill();
                     }
                     this.ctx.restore();
                 });
