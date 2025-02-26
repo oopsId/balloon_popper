@@ -113,8 +113,9 @@
                 this.balloons = [];
                 this.score = 0;
                 this.lastBalloonTime = 0;
-                this.balloonInterval = 500; // Уменьшен интервал для непрерывности
-                this.maxBalloons = 2000; // До 2000 шариков
+                this.balloonInterval = 500;
+                this.maxBalloons = 2000;
+                this.totalBalloonsCreated = 0; // Счётчик созданных шариков
                 this.lastMilestone = 0;
                 this.encouragements = [
                     "Отлично, продолжай!", "Ты в ударе!", "Супер, так держать!", 
@@ -174,11 +175,18 @@
                 for (let i = 0; i < 5; i++) {
                     const sound = new Audio('https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3');
                     sound.preload = 'auto';
-                    sound.load();
                     sound.volume = 0.6;
+                    sound.load(); // Загружаем сразу
                     this.popSounds.push(sound);
                 }
                 this.currentSoundIndex = 0;
+
+                // Принудительная инициализация звука
+                document.addEventListener('touchstart', () => {
+                    this.popSounds.forEach(sound => {
+                        sound.play().then(() => sound.pause()).catch(() => {}); // Прогрев звука
+                    });
+                }, { once: true });
             }
 
             setupEventListeners() {
@@ -231,12 +239,12 @@
             }
 
             createBalloon() {
-                const size = 100; // Вернул размер 100
+                const size = 100;
                 const index = Math.floor(Math.random() * this.balloonImages.length);
                 return {
                     x: Math.random() * (this.canvas.width / this.dpr - size),
                     y: this.canvas.height / this.dpr + size,
-                    dy: -(2 + Math.random() * 3), // Увеличена скорость (было 1 + Math.random() * 2)
+                    dy: -(2 + Math.random() * 3),
                     size: size,
                     image: this.balloonImages[index],
                     poppedImage: this.poppedImages[index],
@@ -262,18 +270,19 @@
             }
 
             update(deltaTime, timestamp) {
-                if (timestamp - this.lastBalloonTime > this.balloonInterval && this.score < 2000) {
-                    if (this.balloons.length < 20) { // Ограничение активных шариков на экране
+                if (timestamp - this.lastBalloonTime > this.balloonInterval && this.totalBalloonsCreated < this.maxBalloons) {
+                    if (this.balloons.length < 20) {
                         this.balloons.push(this.createBalloon());
+                        this.totalBalloonsCreated++;
                     }
                     this.lastBalloonTime = timestamp;
-                    this.balloonInterval = Math.max(300, this.balloonInterval - 2); // Ускоряем появление
+                    this.balloonInterval = Math.max(300, this.balloonInterval - 2);
                 }
                 
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
-                    if (balloon.popped && (timestamp - balloon.popTime > 200)) {
+                    if (balloon.popped && (timestamp - balloon.popTime > 50)) { // Уменьшено до 50 мс
                         this.balloons.splice(i, 1);
                         continue;
                     }
@@ -324,9 +333,13 @@
             e.preventDefault();
         }, { passive: false });
 
+        // Сбрасываем игру при повторном запуске
         window.onload = () => {
             try {
-                new BalloonPopperGame();
+                if (window.gameInstance) {
+                    window.gameInstance = null; // Очищаем предыдущую игру
+                }
+                window.gameInstance = new BalloonPopperGame();
             } catch (e) {
                 console.error('Ошибка инициализации игры:', e);
             }
