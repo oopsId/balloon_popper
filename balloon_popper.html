@@ -35,9 +35,9 @@
             top: 10px;
             left: 10px;
             background: rgba(255, 255, 255, 0.7);
-            padding: 10px 15px;
+            padding: 15px 20px; /* Увеличен padding */
             border-radius: 20px;
-            font-size: 18px;
+            font-size: 24px; /* Увеличен размер шрифта */
             font-weight: bold;
             color: #FF5722;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -99,7 +99,6 @@
                 this.resizeCanvas();
                 window.addEventListener('resize', () => this.resizeCanvas());
                 
-                // DOM элементы
                 this.scoreDisplay = document.getElementById('scoreDisplay');
                 this.milestoneElement = document.getElementById('milestone');
             }
@@ -115,8 +114,8 @@
                 this.score = 0;
                 this.lastBalloonTime = 0;
                 this.balloonInterval = 1000;
-                this.maxBalloons = 20; // Увеличено с 10 до 20
-                this.lastMilestone = 0; // Для отслеживания достижений
+                this.maxBalloons = 50; // Увеличено до 50
+                this.lastMilestone = 0;
                 this.updateScore(0);
             }
 
@@ -124,7 +123,6 @@
                 this.score = newScore;
                 this.scoreDisplay.textContent = `Счёт: ${this.score}`;
                 
-                // Проверка на достижение кратное 30
                 if (this.score > 0 && this.score % 30 === 0 && this.score !== this.lastMilestone) {
                     this.showMilestone();
                     this.lastMilestone = this.score;
@@ -134,8 +132,6 @@
             showMilestone() {
                 this.milestoneElement.textContent = `Поздравляем! ${this.score} шариков!`;
                 this.milestoneElement.style.opacity = '1';
-                
-                // Скрыть сообщение через 3 секунды
                 setTimeout(() => {
                     this.milestoneElement.style.opacity = '0';
                 }, 3000);
@@ -167,11 +163,12 @@
                     return img;
                 });
 
-                // Загрузка звука лопания (несколько копий для одновременного воспроизведения)
                 this.popSounds = [];
                 for (let i = 0; i < 5; i++) {
                     const sound = new Audio('https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3');
                     sound.preload = 'auto';
+                    sound.load(); // Предзагрузка звука сразу
+                    sound.volume = 0.6;
                     this.popSounds.push(sound);
                 }
                 this.currentSoundIndex = 0;
@@ -181,17 +178,10 @@
                 this.canvas.addEventListener('touchstart', (e) => this.handleTouch(e));
                 
                 window.Telegram.WebApp.onEvent('mainButtonClicked', () => {
-                    const data = JSON.stringify(this.score);
+                    const data = JSON.stringify({ score: this.score });
                     window.Telegram.WebApp.sendData(data);
+                    console.log('Счёт отправлен:', this.score); // Для отладки
                 });
-                
-                // Предзагрузка звуков при первом взаимодействии
-                document.addEventListener('touchstart', () => {
-                    this.popSounds.forEach(sound => {
-                        sound.load();
-                        sound.volume = 0.6;
-                    });
-                }, { once: true });
             }
 
             handleTouch(e) {
@@ -202,51 +192,39 @@
                     const touchX = touch.clientX;
                     const touchY = touch.clientY;
                     
-                    let poppedAny = false;
-                    for (let i = 0; i < this.balloons.length; i++) {
+                    for (let i = this.balloons.length - 1; i >= 0; i--) {
                         const balloon = this.balloons[i];
                         if (!balloon.popped && this.isPointInBalloon(touchX, touchY, balloon)) {
                             balloon.popped = true;
                             balloon.popTime = Date.now();
                             this.updateScore(this.score + 1);
-                            poppedAny = true;
-                            // Не продолжаем поиск после первого найденного шарика для этого тача
+                            this.playPopSound();
                             break;
                         }
-                    }
-
-                    if (poppedAny) {
-                        this.playPopSound();
                     }
                 }
             }
             
             playPopSound() {
-                // Используем циклический массив звуков для воспроизведения нескольких одновременно
                 const sound = this.popSounds[this.currentSoundIndex];
                 sound.currentTime = 0;
                 sound.play().catch(error => console.error('Ошибка воспроизведения звука:', error));
-                
-                // Переход к следующему звуку
                 this.currentSoundIndex = (this.currentSoundIndex + 1) % this.popSounds.length;
             }
             
             isPointInBalloon(x, y, balloon) {
-                // Используем более точное определение столкновения с учетом круглой формы шарика
                 const centerX = balloon.x + balloon.size / 2;
                 const centerY = balloon.y + balloon.size / 2;
-                const radius = balloon.size * 0.4; // Немного меньше половины размера для более точного попадания
-                
+                const radius = balloon.size * 0.4;
                 const distance = Math.sqrt(
                     Math.pow(x - centerX, 2) + 
                     Math.pow(y - centerY, 2)
                 );
-                
                 return distance <= radius;
             }
 
             createBalloon() {
-                const size = 100; // Увеличенный размер шариков (было 64 / this.dpr)
+                const size = 100;
                 const index = Math.floor(Math.random() * this.balloonImages.length);
                 return {
                     x: Math.random() * (this.canvas.width / this.dpr - size),
@@ -257,7 +235,7 @@
                     poppedImage: this.poppedImages[index],
                     popped: false,
                     popTime: 0,
-                    rotation: Math.random() * 0.1 - 0.05 // Небольшое случайное вращение для разнообразия
+                    rotation: Math.random() * 0.1 - 0.05
                 };
             }
 
@@ -280,8 +258,6 @@
                 if (timestamp - this.lastBalloonTime > this.balloonInterval && this.balloons.length < this.maxBalloons) {
                     this.balloons.push(this.createBalloon());
                     this.lastBalloonTime = timestamp;
-                    
-                    // Уменьшаем интервал появления шариков со временем (но не меньше 500мс)
                     this.balloonInterval = Math.max(500, this.balloonInterval - 5);
                 }
                 
@@ -289,15 +265,13 @@
                     const balloon = this.balloons[i];
                     
                     if (balloon.popped) {
-                        if (timestamp - balloon.popTime > 300) { // Уменьшено время отображения лопнувшего шарика
+                        if (timestamp - balloon.popTime > 300) {
                             this.balloons.splice(i, 1);
+                            continue; // Продолжаем цикл после удаления
                         }
                     } else {
                         balloon.y += balloon.dy * (deltaTime / 16.67);
-                        
-                        // Небольшое покачивание шариков влево-вправо
                         balloon.x += Math.sin(timestamp / 1000 + i) * 0.5;
-                        
                         if (balloon.y < -balloon.size) {
                             this.balloons.splice(i, 1);
                         }
@@ -309,19 +283,12 @@
                 this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
                 
                 this.balloons.forEach(balloon => {
-                    // Сохраняем текущее состояние контекста
                     this.ctx.save();
-                    
-                    // Переносим точку отсчета в центр шарика для вращения
                     this.ctx.translate(
                         balloon.x + balloon.size / 2,
                         balloon.y + balloon.size / 2
                     );
-                    
-                    // Применяем небольшое вращение
                     this.ctx.rotate(Math.sin(this.lastFrameTime / 1000) * balloon.rotation);
-                    
-                    // Рисуем шарик с учетом вращения (смещаем обратно к исходной позиции)
                     if (balloon.popped) {
                         this.ctx.drawImage(
                             balloon.poppedImage, 
@@ -339,20 +306,21 @@
                             balloon.size
                         );
                     }
-                    
-                    // Восстанавливаем состояние контекста
                     this.ctx.restore();
                 });
             }
         }
 
-        // Функция для защиты от скролла страницы при прокрутке игры
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
 
         window.onload = () => {
-            new BalloonPopperGame();
+            try {
+                new BalloonPopperGame();
+            } catch (e) {
+                console.error('Ошибка инициализации игры:', e);
+            }
         };
     </script>
 </body>
