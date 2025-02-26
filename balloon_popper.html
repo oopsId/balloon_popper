@@ -114,50 +114,6 @@
             transition: width 0.3s ease-in-out;
             width: 100%;
         }
-        #modeSelector {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            text-align: center;
-            z-index: 20;
-            opacity: 1;
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-        #modeSelector.hidden {
-            opacity: 0;
-            transform: translate(-50%, -60%) scale(0.8);
-            pointer-events: none;
-        }
-        #modeSelector h2 {
-            margin: 0 0 20px;
-            color: #FF5722;
-            font-size: 32px;
-        }
-        #modeSelector button {
-            display: block;
-            width: 100%;
-            max-width: 250px;
-            margin: 10px auto;
-            padding: 10px;
-            background: #FF5722;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 20px;
-            cursor: pointer;
-            transition: background 0.3s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        #modeSelector button:hover {
-            background: #E64A19;
-        }
         #luckMessage {
             position: absolute;
             top: 50%;
@@ -185,12 +141,6 @@
     <div id="milestone"></div>
     <div id="missedBar"><div id="missedBarFill" style="width: 100%;"></div></div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
-    <div id="modeSelector">
-        <h2>Выбери режим</h2>
-        <button id="meditativeMode">Медитативный</button>
-        <button id="difficultMode">Трудный</button>
-        <button id="hardcoreMode">Хардкор</button>
-    </div>
     <div id="luckMessage">Желаю удачи! 😉</div>
     <script>
         const cacheBuster = new Date().getTime();
@@ -199,7 +149,7 @@
             constructor() {
                 this.initTelegram();
                 this.initCanvas();
-                this.setupModeSelection(); // Инициализация выбора режима один раз
+                this.showModeSelection(); // Показываем выбор режима через Telegram Popup
             }
 
             initTelegram() {
@@ -229,7 +179,6 @@
                 this.timerDisplay = document.getElementById('timerDisplay');
                 this.milestoneElement = document.getElementById('milestone');
                 this.missedBarFill = document.getElementById('missedBarFill');
-                this.modeSelector = document.getElementById('modeSelector');
                 this.luckMessage = document.getElementById('luckMessage');
             }
             
@@ -240,27 +189,28 @@
                 this.initClouds();
             }
 
-            setupModeSelection() {
-                const startMode = (mode) => {
-                    this.modeSelector.classList.add('hidden');
-                    setTimeout(() => {
-                        this.modeSelector.style.display = 'none';
-                        if (mode === 'hardcore') {
-                            this.luckMessage.style.opacity = '1';
-                            setTimeout(() => {
-                                this.luckMessage.style.opacity = '0';
-                                this.setGameMode(mode);
-                            }, 1000); // 1 секунда для "Желаю удачи!"
-                        } else {
+            showModeSelection() {
+                window.Telegram.WebApp.showPopup({
+                    title: 'Выбери режим',
+                    message: 'Какой режим хочешь попробовать?',
+                    buttons: [
+                        { id: 'meditative', type: 'default', text: 'Медитативный' },
+                        { id: 'difficult', type: 'default', text: 'Трудный' },
+                        { id: 'hardcore', type: 'default', text: 'Хардкор' }
+                    ]
+                }, (buttonId) => {
+                    if (!buttonId) return; // Если попап закрыт без выбора
+                    const mode = buttonId;
+                    if (mode === 'hardcore') {
+                        this.luckMessage.style.opacity = '1';
+                        setTimeout(() => {
+                            this.luckMessage.style.opacity = '0';
                             this.setGameMode(mode);
-                        }
-                    }, 500);
-                };
-
-                // Привязка событий один раз при загрузке
-                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'), { once: false });
-                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'), { once: false });
-                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'), { once: false });
+                        }, 2000); // 2 секунды для "Желаю удачи!"
+                    } else {
+                        this.setGameMode(mode);
+                    }
+                });
             }
 
             setGameMode(mode) {
@@ -443,8 +393,7 @@
                 window.Telegram.WebApp.MainButton.show();
                 setTimeout(() => {
                     this.milestoneElement.style.opacity = '0';
-                    this.modeSelector.style.display = 'block'; // Показываем выбор режима после конца игры
-                    this.modeSelector.classList.remove('hidden');
+                    this.showModeSelection(); // Показываем выбор режима после конца игры
                 }, 5000);
             }
 
@@ -536,7 +485,7 @@
                     this.timerDisplay.style.display = 'none';
                 }
                 window.Telegram.WebApp.MainButton.hide();
-                // Убрали повторный вызов setupModeSelection, так как события уже привязаны
+                this.showModeSelection(); // Показываем попап после сброса
             }
 
             handleTouch(e) {
