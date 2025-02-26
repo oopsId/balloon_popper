@@ -140,8 +140,8 @@
         }
         #modeSelector button {
             display: block;
-            width: 90%; /* Увеличена ширина до 90% */
-            max-width: 200px; /* Добавлен максимальный размер */
+            width: 90%;
+            max-width: 200px;
             margin: 10px auto;
             padding: 10px;
             background: #FF5722;
@@ -184,9 +184,9 @@
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
     <div id="modeSelector">
         <h2>Выбери режим</h2>
-        <button id="hardcoreMode">Хардкор</button>
         <button id="meditativeMode">Медитативный</button>
         <button id="difficultMode">Трудный</button>
+        <button id="hardcoreMode">Хардкор</button>
     </div>
     <div id="luckMessage">Желаю удачи! 😉</div>
     <script>
@@ -254,10 +254,24 @@
                     }, 500);
                 };
 
-                // Привязка событий к кнопкам
-                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'));
-                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'));
-                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'));
+                // Очистка старых слушателей, если они есть
+                const buttons = {
+                    meditative: document.getElementById('meditativeMode'),
+                    difficult: document.getElementById('difficultMode'),
+                    hardcore: document.getElementById('hardcoreMode')
+                };
+
+                // Удаляем старые обработчики, чтобы избежать дублирования
+                for (const [key, btn] of Object.entries(buttons)) {
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    buttons[key] = newBtn;
+                }
+
+                // Привязываем новые обработчики
+                buttons.meditative.addEventListener('click', () => startMode('meditative'));
+                buttons.difficult.addEventListener('click', () => startMode('difficult'));
+                buttons.hardcore.addEventListener('click', () => startMode('hardcore'));
             }
 
             setGameMode(mode) {
@@ -273,10 +287,10 @@
                     case 'meditative':
                         this.gameMode = 'meditative';
                         this.maxTime = null;
-                        this.maxMissed = 100;
-                        this.balloonSpeedMultiplier = 0.5;
+                        this.maxMissed = 150; // Изменено на 150
+                        this.balloonSpeedMultiplier = 0.5; // Медленные шарики
                         this.balloonInterval = 200;
-                        this.showEncouragements = true;
+                        this.showEncouragements = true; // Сообщения каждые 40 очков
                         break;
                     case 'difficult':
                         this.gameMode = 'difficult';
@@ -350,36 +364,36 @@
 
             updateEncouragements() {
                 this.encouragements = [
-                    `${this.playerName}, ты просто шариковый ниндзя!`,
-                    `${this.playerName}, лови их всех!`,
-                    `${this.playerName}, шарики дрожат от страха!`,
-                    `${this.playerName}, ты мастер лопанья!`,
-                    `${this.playerName}, шарики не успевают от тебя сбежать!`,
-                    `${this.playerName}, ты в ударе!`,
-                    `${this.playerName}, твои пальцы — это шариковый кошмар!`,
-                    `${this.playerName}, ты чемпион по шарикам!`,
-                    `${this.playerName}, шарики сдаются без боя!`,
-                    `${this.playerName}, ты лопаешь быстрее ветра!`,
-                    `${this.playerName}, шарики в панике!`,
-                    `${this.playerName}, ты их всех порвешь!`,
-                    `${this.playerName}, ты шариковый терминатор!`,
-                    `${this.playerName}, шарики в шоке!`,
-                    `${this.playerName}, ты король лопанья!`,
-                    `${this.playerName}, шарики просят пощады!`,
-                    `${this.playerName}, твоя скорость — это что-то!`,
-                    `${this.playerName}, шарики падают как мухи!`,
-                    `${this.playerName}, ты шариковый бог!`,
-                    `${this.playerName}, шарики мечтают о покое!`,
-                    `${this.playerName}, твои руки — шариковая буря!`,
-                    `${this.playerName}, шарики не знают, куда бежать!`,
-                    `${this.playerName}, ты просто шариковый маг!`,
-                    `${this.playerName}, шарики в ауте!`,
-                    `${this.playerName}, ты лопаешь как профи!`,
-                    `${this.playerName}, шарики тебя боятся!`,
-                    `${this.playerName}, твоя ловкость — легенда!`,
-                    `${this.playerName}, шарики исчезают на глазах!`,
-                    `${this.playerName}, ты шариковый разрушитель!`,
-                    `${this.playerName}, шарики в нокауте!`
+                    `${this.playerName}, ты просто шариковый ниндзя! 😎`,
+                    `${this.playerName}, лови их всех! 🎯`,
+                    `${this.playerName}, шарики дрожат от страха! 😱`,
+                    `${this.playerName}, ты мастер лопанья! 🎈`,
+                    `${this.playerName}, шарики не успевают от тебя сбежать! 🏃‍♂️`,
+                    `${this.playerName}, ты в ударе! 🔥`,
+                    `${this.playerName}, твои пальцы — это шариковый кошмар! ✋`,
+                    `${this.playerName}, ты чемпион по шарикам! 🏆`,
+                    `${this.playerName}, шарики сдаются без боя! 🙌`,
+                    `${this.playerName}, ты лопаешь быстрее ветра! 💨`,
+                    `${this.playerName}, шарики в панике! 😵`,
+                    `${this.playerName}, ты их всех порвешь! 💪`,
+                    `${this.playerName}, ты шариковый терминатор! 🤖`,
+                    `${this.playerName}, шарики в шоке! 😲`,
+                    `${this.playerName}, ты король лопанья! 👑`,
+                    `${this.playerName}, шарики просят пощады! 🙏`,
+                    `${this.playerName}, твоя скорость — это что-то! ⚡`,
+                    `${this.playerName}, шарики падают как мухи! 🪰`,
+                    `${this.playerName}, ты шариковый бог! 🌟`,
+                    `${this.playerName}, шарики мечтают о покое! 😴`,
+                    `${this.playerName}, твои руки — шариковая буря! 🌪️`,
+                    `${this.playerName}, шарики не знают, куда бежать! 🏃`,
+                    `${this.playerName}, ты просто шариковый маг! ✨`,
+                    `${this.playerName}, шарики в ауте! 😵‍💫`,
+                    `${this.playerName}, ты лопаешь как профи! 🏅`,
+                    `${this.playerName}, шарики тебя боятся! 👻`,
+                    `${this.playerName}, твоя ловкость — легенда! 🌟`,
+                    `${this.playerName}, шарики исчезают на глазах! 👀`,
+                    `${this.playerName}, ты шариковый разрушитель! 💥`,
+                    `${this.playerName}, шарики в нокауте! 🥊`
                 ];
             }
 
@@ -413,7 +427,7 @@
                 }
 
                 if (this.showEncouragements) {
-                    const milestoneInterval = this.gameMode === 'meditative' ? 15 : 50;
+                    const milestoneInterval = this.gameMode === 'meditative' ? 40 : 50; // 40 для медитативного
                     if (this.score > 0 && this.score % milestoneInterval === 0 && this.score !== this.lastMilestone) {
                         this.showMilestone();
                         this.lastMilestone = this.score;
