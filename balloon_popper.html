@@ -140,7 +140,8 @@
         }
         #modeSelector button {
             display: block;
-            width: 80%;
+            width: 90%; /* Увеличена ширина до 90% */
+            max-width: 200px; /* Добавлен максимальный размер */
             margin: 10px auto;
             padding: 10px;
             background: #FF5722;
@@ -237,10 +238,6 @@
             }
 
             selectGameMode() {
-                const hardcoreBtn = document.getElementById('hardcoreMode');
-                const meditativeBtn = document.getElementById('meditativeMode');
-                const difficultBtn = document.getElementById('difficultMode');
-
                 const startMode = (mode) => {
                     this.modeSelector.classList.add('hidden');
                     setTimeout(() => {
@@ -250,16 +247,17 @@
                             setTimeout(() => {
                                 this.luckMessage.style.opacity = '0';
                                 this.setGameMode(mode);
-                            }, 500); // 0.5 секунды для "Желаю удачи!"
+                            }, 500);
                         } else {
                             this.setGameMode(mode);
                         }
-                    }, 500); // 0.5 секунды для анимации исчезновения
+                    }, 500);
                 };
 
-                hardcoreBtn.onclick = () => startMode('hardcore');
-                meditativeBtn.onclick = () => startMode('meditative');
-                difficultBtn.onclick = () => startMode('difficult');
+                // Привязка событий к кнопкам
+                document.getElementById('hardcoreMode').addEventListener('click', () => startMode('hardcore'));
+                document.getElementById('meditativeMode').addEventListener('click', () => startMode('meditative'));
+                document.getElementById('difficultMode').addEventListener('click', () => startMode('difficult'));
             }
 
             setGameMode(mode) {
@@ -283,7 +281,7 @@
                     case 'difficult':
                         this.gameMode = 'difficult';
                         this.maxTime = null;
-                        this.maxMissed = 50; // Изменено с 100 на 50
+                        this.maxMissed = 50;
                         this.balloonSpeedMultiplier = 1.5;
                         this.balloonInterval = 300;
                         this.showEncouragements = true;
@@ -535,7 +533,7 @@
                 window.Telegram.WebApp.MainButton.hide();
                 this.modeSelector.style.display = 'block';
                 this.modeSelector.classList.remove('hidden');
-                this.selectGameMode(); // Повторный выбор режима
+                this.selectGameMode();
             }
 
             handleTouch(e) {
