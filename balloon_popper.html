@@ -52,6 +52,16 @@
             justify-content: center;
             text-align: center;
         }
+        #veteranStar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 40px;
+            color: #FFD700;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
+            z-index: 10;
+            display: none;
+        }
         #milestone {
             position: absolute;
             top: 50%;
@@ -71,18 +81,25 @@
         }
         #missedBar {
             position: absolute;
-            top: 0;
-            left: 0;
-            height: 20px;
-            background: linear-gradient(90deg, rgba(255, 0, 0, 0.5), rgba(147, 0, 255, 0.5));
-            box-shadow: 0 0 10px rgba(255, 0, 147, 0.7), 0 0 20px rgba(147, 0, 255, 0.5);
-            transition: width 0.3s ease-in-out;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 15px;
+            width: 50%;
+            max-width: 400px;
+            background: rgba(50, 50, 50, 0.8);
+            border: 2px solid #FF0000;
+            box-shadow: 0 0 10px #FF0000, 0 0 20px rgba(255, 0, 0, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
             z-index: 9;
-            animation: neonPulse 2s infinite alternate;
         }
-        @keyframes neonPulse {
-            0% { box-shadow: 0 0 10px rgba(255, 0, 147, 0.7), 0 0 20px rgba(147, 0, 255, 0.5); }
-            100% { box-shadow: 0 0 15px rgba(255, 0, 147, 1), 0 0 30px rgba(147, 0, 255, 0.8); }
+        #missedBarFill {
+            height: 100%;
+            background: #FF0000;
+            box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.8);
+            transition: width 0.3s ease-in-out;
+            width: 100%;
         }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js?v=${new Date().getTime()}"></script>
@@ -90,8 +107,9 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="scoreDisplay">🎈<br>0</div>
+    <div id="veteranStar">⭐</div>
     <div id="milestone"></div>
-    <div id="missedBar" style="width: 0;"></div>
+    <div id="missedBar"><div id="missedBarFill" style="width: 100%;"></div></div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
     <script>
         const cacheBuster = new Date().getTime();
@@ -129,8 +147,9 @@
                 window.addEventListener('resize', () => this.resizeCanvas());
                 
                 this.scoreDisplay = document.getElementById('scoreDisplay');
+                this.veteranStar = document.getElementById('veteranStar');
                 this.milestoneElement = document.getElementById('milestone');
-                this.missedBar = document.getElementById('missedBar');
+                this.missedBarFill = document.getElementById('missedBarFill');
             }
             
             resizeCanvas() {
@@ -151,7 +170,6 @@
                 this.lastMilestone = 0;
                 this.gameOver = false;
 
-                // Проверка имени игрока
                 let storedName = localStorage.getItem('playerName');
                 if (!storedName && window.Telegram.WebApp.initDataUnsafe?.user?.first_name) {
                     storedName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
@@ -179,10 +197,9 @@
                     this.playerName = storedName;
                 }
 
-                // Проверка статуса ветерана
                 this.isVeteran = localStorage.getItem('veteranStatus') === 'true';
                 if (this.isVeteran) {
-                    this.scoreDisplay.innerHTML = `⭐<br>🎈 ${this.score}`;
+                    this.veteranStar.style.display = 'block';
                 }
 
                 this.updateEncouragements();
@@ -233,14 +250,14 @@
                 const canvasHeight = this.canvas.height / this.dpr;
                 
                 for (let layer = 0; layer < 3; layer++) {
-                    const cloudCount = 3 + layer;
+                    const cloudCount = 5 + layer; // Увеличим количество облаков
                     for (let i = 0; i < cloudCount; i++) {
                         this.clouds.push({
                             x: Math.random() * canvasWidth,
-                            y: Math.random() * canvasHeight * 0.7,
-                            size: 200 + layer * 100,
-                            speed: 0.1 + layer * 0.05,
-                            opacity: 0.8 - layer * 0.2,
+                            y: Math.random() * canvasHeight * 0.8,
+                            size: 150 + layer * 100, // Уменьшим размер для большей динамики
+                            speed: 0.2 + layer * 0.1, // Ускорим движение
+                            opacity: 1 - layer * 0.2, // Повысим видимость
                             layer: layer
                         });
                     }
@@ -249,21 +266,18 @@
 
             updateScore(newScore) {
                 this.score = newScore;
-                let displayText = `🎈<br>${this.score}`;
+                this.scoreDisplay.innerHTML = `🎈<br>${this.score}`;
                 if (this.score >= 200 && !this.isVeteran) {
-                    displayText = `⭐<br>🎈 ${this.score}`;
+                    this.veteranStar.style.display = 'block';
                     this.isVeteran = true;
                     localStorage.setItem('veteranStatus', 'true');
-                } else if (this.isVeteran) {
-                    displayText = `⭐<br>🎈 ${this.score}`;
                 }
-                this.scoreDisplay.innerHTML = displayText;
 
                 if (this.score > 0 && this.score % 50 === 0 && this.score !== this.lastMilestone) {
                     this.showMilestone();
                     this.lastMilestone = this.score;
                 }
-                if (this.score % 20 === 0 && this.score > 0) {
+                if (this.score % 10 === 0 && this.score > 0) { // Увеличим частоту событий
                     this.triggerRandomEvent();
                 }
             }
@@ -282,6 +296,9 @@
                 this.milestoneElement.style.opacity = '1';
                 window.Telegram.WebApp.MainButton.setText('Сохранить и заново');
                 window.Telegram.WebApp.MainButton.show();
+                setTimeout(() => {
+                    this.milestoneElement.style.opacity = '0';
+                }, 5000); // Исчезает через 5 секунд
             }
 
             loadAssets() {
@@ -364,7 +381,7 @@
                 this.gameOver = false;
                 this.events = [];
                 this.updateScore(0);
-                this.missedBar.style.width = '0';
+                this.missedBarFill.style.width = '100%';
                 window.Telegram.WebApp.MainButton.hide();
             }
 
@@ -432,7 +449,7 @@
                 const events = ['plane', 'bird', 'balloon'];
                 const eventType = events[Math.floor(Math.random() * events.length)];
                 const direction = Math.random() < 0.5 ? 1 : -1;
-                const speed = (1 + Math.random() * 2) * direction;
+                const speed = (2 + Math.random() * 3) * direction; // Ускорим события
                 const yPos = Math.random() * canvasHeight * 0.5;
 
                 this.events.push({
@@ -440,8 +457,8 @@
                     x: direction > 0 ? -200 : canvasWidth + 200,
                     y: yPos,
                     speed: speed,
-                    size: 150,
-                    opacity: 0.5
+                    size: 200, // Увеличим размер для заметности
+                    opacity: 0.8 // Повысим видимость
                 });
             }
 
@@ -512,9 +529,8 @@
             }
 
             updateMissedBar() {
-                const maxWidth = this.canvas.width / this.dpr;
-                const percentage = this.missedBalloons / 100;
-                this.missedBar.style.width = `${maxWidth * percentage}px`;
+                const percentage = (100 - this.missedBalloons) / 100; // Уменьшаем шкалу
+                this.missedBarFill.style.width = `${percentage * 100}%`;
             }
 
             render() {
@@ -532,7 +548,7 @@
                             cloud.size * 0.6
                         );
                     } else {
-                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                         const centerX = cloud.x + cloud.size / 2;
                         const centerY = cloud.y + cloud.size / 3;
                         const radius = cloud.size / 3;
