@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Отключение кэша -->
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -45,6 +44,7 @@
             font-weight: bold;
             color: #FF5722;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10; /* Над облаками */
         }
         #milestone {
             position: absolute;
@@ -61,9 +61,9 @@
             opacity: 0;
             transition: opacity 0.5s;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            z-index: 10; /* Над облаками */
         }
     </style>
-    <!-- Добавляем параметр cache busting к скрипту Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js?v=${new Date().getTime()}"></script>
 </head>
 <body>
@@ -72,7 +72,6 @@
     <div id="milestone">Поздравляем! 50 шариков!</div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
     <script>
-        // Генерируем уникальную версию для предотвращения кэширования
         const cacheBuster = new Date().getTime();
 
         class BalloonPopperGame {
@@ -115,6 +114,7 @@
                 this.canvas.width = window.innerWidth * this.dpr;
                 this.canvas.height = window.innerHeight * this.dpr;
                 this.ctx.scale(this.dpr, this.dpr);
+                this.initClouds(); // Пересоздаем облака при изменении размера
             }
 
             initGameState() {
@@ -131,7 +131,30 @@
                     "Круто, не останавливайся!", "Фантастика!", "Ты чемпион!",
                     "Просто wow!"
                 ];
+                this.clouds = [];
+                this.initClouds();
                 this.updateScore(0);
+            }
+
+            initClouds() {
+                this.clouds = [];
+                const canvasWidth = this.canvas.width / this.dpr;
+                const canvasHeight = this.canvas.height / this.dpr;
+                
+                // Создаем 3 слоя облаков для параллакса
+                for (let layer = 0; layer < 3; layer++) {
+                    const cloudCount = 3 + layer; // Больше облаков на дальних слоях
+                    for (let i = 0; i < cloudCount; i++) {
+                        this.clouds.push({
+                            x: Math.random() * canvasWidth,
+                            y: Math.random() * canvasHeight * 0.7, // Облака выше середины
+                            size: 200 + layer * 100, // Большие облака, увеличиваются с глубиной
+                            speed: 0.1 + layer * 0.05, // Дальний слой медленнее
+                            opacity: 0.8 - layer * 0.2, // Дальние облака прозрачнее
+                            layer: layer
+                        });
+                    }
+                }
             }
 
             updateScore(newScore) {
@@ -194,6 +217,11 @@
                         sound.play().then(() => sound.pause()).catch(() => {});
                     });
                 }, { once: true });
+
+                // Загружаем изображение облака (можно заменить на свое)
+                this.cloudImage = new Image();
+                this.cloudImage.src = `https://cdn.pixabay.com/photo/2013/07/12/12/58/cloud-146520_1280.png?v=${cacheBuster}`;
+                this.cloudImage.onerror = () => console.error('Ошибка загрузки изображения облака');
             }
 
             setupEventListeners() {
@@ -286,6 +314,7 @@
                     this.balloonInterval = Math.max(300, this.balloonInterval - 2);
                 }
                 
+                // Обновление шариков
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
@@ -302,11 +331,41 @@
                         }
                     }
                 }
+
+                // Обновление облаков (параллакс)
+                const canvasWidth = this.canvas.width / this.dpr;
+                this.clouds.forEach(cloud => {
+                    cloud.x += cloud.speed * (deltaTime / 16.67);
+                    if (cloud.x > canvasWidth) {
+                        cloud.x = -cloud.size; // Возвращаем облако с левой стороны
+                    }
+                });
             }
 
             render() {
                 this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
                 
+                // Рендеринг облаков (с параллаксом)
+                this.clouds.forEach(cloud => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = cloud.opacity;
+                    if (this.cloudImage.complete) {
+                        this.ctx.drawImage(
+                            this.cloudImage,
+                            cloud.x,
+                            cloud.y,
+                            cloud.size,
+                            cloud.size * 0.6 // Сжимаем по высоте для реалистичности
+                        );
+                    } else {
+                        // Запасной вариант: рисуем прямоугольник, если изображение не загрузилось
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        this.ctx.fillRect(cloud.x, cloud.y, cloud.size, cloud.size * 0.6);
+                    }
+                    this.ctx.restore();
+                });
+
+                // Рендеринг шариков поверх облаков
                 this.balloons.forEach(balloon => {
                     this.ctx.save();
                     this.ctx.translate(
@@ -341,7 +400,6 @@
         }, { passive: false });
 
         window.onload = () => {
-            // Принудительно очищаем кэш перед запуском
             if ('caches' in window) {
                 caches.keys().then(keys => {
                     keys.forEach(key => caches.delete(key));
