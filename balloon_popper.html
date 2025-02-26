@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Отключение кэша -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Лопай шарики</title>
     <style>
         body {
@@ -59,7 +63,8 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
     </style>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Добавляем параметр cache busting к скрипту Telegram -->
+    <script src="https://telegram.org/js/telegram-web-app.js?v=${new Date().getTime()}"></script>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
@@ -67,6 +72,9 @@
     <div id="milestone">Поздравляем! 50 шариков!</div>
     <div id="error" style="display: none;">Эта игра работает только в Telegram!</div>
     <script>
+        // Генерируем уникальную версию для предотвращения кэширования
+        const cacheBuster = new Date().getTime();
+
         class BalloonPopperGame {
             constructor() {
                 this.initTelegram();
@@ -115,7 +123,7 @@
                 this.lastBalloonTime = 0;
                 this.balloonInterval = 500;
                 this.maxBalloons = 2000;
-                this.totalBalloonsCreated = 0; // Счётчик созданных шариков
+                this.totalBalloonsCreated = 0;
                 this.lastMilestone = 0;
                 this.encouragements = [
                     "Отлично, продолжай!", "Ты в ударе!", "Супер, так держать!", 
@@ -147,14 +155,14 @@
 
             loadAssets() {
                 this.balloonSources = [
-                    'https://oopsid.github.io/balloon_popper/assets/balloon_red.png',
-                    'https://oopsid.github.io/balloon_popper/assets/balloon_blue.png',
-                    'https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png'
+                    `https://oopsid.github.io/balloon_popper/assets/balloon_red.png?v=${cacheBuster}`,
+                    `https://oopsid.github.io/balloon_popper/assets/balloon_blue.png?v=${cacheBuster}`,
+                    `https://oopsid.github.io/balloon_popper/assets/balloon_yellow.png?v=${cacheBuster}`
                 ];
                 this.poppedSources = [
-                    'https://oopsid.github.io/balloon_popper/assets/popped_red.png',
-                    'https://oopsid.github.io/balloon_popper/assets/popped_blue.png',
-                    'https://oopsid.github.io/balloon_popper/assets/popped_yellow.png'
+                    `https://oopsid.github.io/balloon_popper/assets/popped_red.png?v=${cacheBuster}`,
+                    `https://oopsid.github.io/balloon_popper/assets/popped_blue.png?v=${cacheBuster}`,
+                    `https://oopsid.github.io/balloon_popper/assets/popped_yellow.png?v=${cacheBuster}`
                 ];
                 
                 this.balloonImages = this.balloonSources.map(src => {
@@ -173,18 +181,17 @@
 
                 this.popSounds = [];
                 for (let i = 0; i < 5; i++) {
-                    const sound = new Audio('https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3');
+                    const sound = new Audio(`https://oopsid.github.io/balloon_popper/assets/pop_sound.mp3?v=${cacheBuster}`);
                     sound.preload = 'auto';
                     sound.volume = 0.6;
-                    sound.load(); // Загружаем сразу
+                    sound.load();
                     this.popSounds.push(sound);
                 }
                 this.currentSoundIndex = 0;
 
-                // Принудительная инициализация звука
                 document.addEventListener('touchstart', () => {
                     this.popSounds.forEach(sound => {
-                        sound.play().then(() => sound.pause()).catch(() => {}); // Прогрев звука
+                        sound.play().then(() => sound.pause()).catch(() => {});
                     });
                 }, { once: true });
             }
@@ -282,7 +289,7 @@
                 for (let i = this.balloons.length - 1; i >= 0; i--) {
                     const balloon = this.balloons[i];
                     
-                    if (balloon.popped && (timestamp - balloon.popTime > 50)) { // Уменьшено до 50 мс
+                    if (balloon.popped && (timestamp - balloon.popTime > 50)) {
                         this.balloons.splice(i, 1);
                         continue;
                     }
@@ -333,11 +340,17 @@
             e.preventDefault();
         }, { passive: false });
 
-        // Сбрасываем игру при повторном запуске
         window.onload = () => {
+            // Принудительно очищаем кэш перед запуском
+            if ('caches' in window) {
+                caches.keys().then(keys => {
+                    keys.forEach(key => caches.delete(key));
+                });
+            }
+
             try {
                 if (window.gameInstance) {
-                    window.gameInstance = null; // Очищаем предыдущую игру
+                    window.gameInstance = null;
                 }
                 window.gameInstance = new BalloonPopperGame();
             } catch (e) {
